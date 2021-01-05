@@ -1,0 +1,62 @@
+#data import
+data = read.csv("playoff.csv")
+data2=na.omit(data)
+
+Nth.delete<-function(dataframe, n)dataframe[-(seq(n,to=nrow(dataframe),by=n)),]
+data2<-Nth.delete(data, 2)
+
+write.csv(data2,'tobemerge.csv')
+
+data3= read.csv("tobemerge.csv")
+library(tidyverse)
+
+myvars <- names(data2) %in% c("Year", "O.U", "Home.Team", "Away.Team", "Total.Points", "Time", "Round")
+newdata <- data2[myvars]
+
+
+data3<-data3 %>% select(Year10, O.U, Home.Team, Away.Team, Total.Points, Round)
+
+write.csv(data3,'tobemerge2.csv')
+#had to paste in round name in excel
+data3=read.csv("tobemerge2.csv")
+
+pas=read.csv("NFL Team Season Stats - Passing.csv")
+
+merged = merge(data3, pas, by.x=c("Year10", "Home.Team"), by.y=c("YEAR", "Team.name"))
+mergedagain=merge(merged, pas, by.x=c("Year", "Away.Team"), by.y=c("YEAR", "Team.name"))
+
+NFL Team Season Stats - Rushing.csv
+rush=read.csv("NFL Team Season Stats - Rushing.csv")
+mergedthrice=merge(mergedagain, rush, by.x=c("Year10", "Home.Team"), by.y=c("YEAR", "Team.name"))
+finaldata=merge(mergedthrice, rush, by.x=c("Year10", "Away.Team"), by.y=c("YEAR", "Team.name"))
+write.csv(finaldata,'finaldata2.csv')
+
+
+#Renamed variables in excel to show which are passing and running, fitered to WC and Division in Excel 
+final=read.csv("finaldata2.csv")
+
+
+filter(final, round = "WC")
+
+WC=read.csv("WC.csv")
+WC = WC[,-1]
+
+
+fit <- lm(Total.Points ~ .-Year10-Away.Team-X-Round-Home.Team-Team.x-O.U-Team.x-Team.y-Team.y.1-Team.x.1,  data=WC)
+fit <- lm(Total.Points ~ Att.x+TD.x+QBR.x+Att.y+TD.y+Rush.Att.x+Rush.Att.y+Rush.TD.x+Rush.TD.y+QBR.y+Comp.x+Comp.y+Int.x+Int.y+FumL.x+FumL.y+Yds.x+Yds.y+Rush.Yds.x+Rush.Yds.y,  data=WC)
+library(olsrr)
+
+#testing with div games
+Div=read.csv("Div.csv")
+
+
+
+
+predictions <- fit %>% predict(Div)
+data.frame( R2 = R2(predictions, Div$Total.Points),
+            RMSE = RMSE(predictions, Div$Total.Points),
+            MAE = MAE(predictions, Div$Total.Points))
+write.table(predictions,"clipboard",sep="\t",row.names = TRUE)
+
+
+
