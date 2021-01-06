@@ -1,0 +1,22 @@
+library(olsrr)
+library(tidyverse)
+library(caret)
+library(car)
+
+
+Ken=read.csv("2020Ken.csv")
+game=read.csv("todaygame.csv")
+
+
+game = merge(game, Ken, by.x=c("HOME"), by.y=c("Team"))
+game2 = merge(game, Ken, by.x=c("VISITOR"), by.y=c("Team"))
+
+
+predictions <- olsfit2 %>% predict(game2)
+
+game2$predictions=predictions
+library(oslrr)
+
+game2<-select(game2, HOME, VISITOR, predictions) 
+
+write.csv(game2,'Jan5.csv')

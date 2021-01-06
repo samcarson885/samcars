@@ -1,0 +1,48 @@
+Stats = read.csv("ncaa basketball 2019-20.csv")
+Nth.delete<-function(dataframe, n)dataframe[-(seq(n,to=nrow(dataframe),by=n)),]
+data2<-Nth.delete(Stats, 2)
+
+library(olsrr)
+library(tidyverse)
+library(caret)
+library(car)
+
+
+set.seed(50)
+training.samples <- data2$Total.Points %>%
+  createDataPartition(p = .4, list = FALSE)
+train.data  <- data2[training.samples, ]
+test.data <- data2[-training.samples, ]
+
+
+
+Stats2=read.csv("KenPom 2019-2020.csv")
+
+merged = merge(train.data, Stats2, by.x=c("Home"), by.y=c("Team11"))
+merged2 = merge(merged, Stats2, by.x=c("Visitor"), by.y=c("Team11"))
+
+olsfit <- lm(Total.Points ~ .-Team10.y-Team10.x-W.L.x-W.L.y-Conf.y-Conf.x-Team.y-Team.x-Vfinal-V2nd-Close-Open-Final-X2nd-X1st-VH-Rot-Home-Visitor-V1st, data=merged2)
+
+merged2<-select(merged2, Visitor, Home, Close, Open, ML, Total.Points, AdjEM.x, AdjO.x, AdjD.x, OppO.x, OppD.x, AdjEM.2.x, AdjEM.y, AdjO.y, AdjD.y, OppO.y, OppD.y, AdjEM.2.y)
+
+olsfit<-lm(Total.Points~.-Visitor-Home-Close-Open-ML, data=merged2)
+
+#forward step
+ols_step_both_p(olsfit, pent=.05)
+
+olsfit2<-lm(Total.Points~AdjO.y+AdjEM.y+AdjO.x+AdjD.x+AdjEM.2.y, data=merged2)
+
+merged3 = merge(test.data, Stats2, by.x=c("Home"), by.y=c("Team11"))
+merged4 = merge(merged3, Stats2, by.x=c("Visitor"), by.y=c("Team11"))
+
+
+predictions <- olsfit2 %>% predict(merged4)
+data.frame( R2 = R2(predictions, merged4$Total.Points),
+            RMSE = RMSE(predictions, merged4$Total.Points),
+            MAE = MAE(predictions, merged4$Total.Points))
+            
+write.csv(merged4,'cbb.csv')
+            
+
+
+
