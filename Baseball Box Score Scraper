@@ -1,0 +1,49 @@
+#must have links from baseball almanac to extract in a csv 
+
+
+Sites<-read.csv("COLLL.csv", header=FALSE)
+Sites = Sites[-1,]
+Sites<-data.frame(lapply(Sites, as.character), stringsAsFactors=FALSE)
+
+
+library(xml2)
+library(stringr)
+extract_table <- function(webpage_url) {
+  webpage <- xml2::read_html(webpage_url)  
+  rvest::html_table(webpage, fill=TRUE)[[1]] 
+}
+
+list_data <- lapply(Sites, extract_table)
+
+library(purrr)
+
+result <- purrr::keep(list_data, ~ nrow(.x) > 5)
+
+colnames <- c("Player","AB/IP","Runs/Hit", "RBI/ERA", "pitcher", "pitch", "pitchers") 
+result<-lapply(result, setNames, colnames)
+
+my_names = c("Player","AB/IP","Runs/Hit", "RBI/ERA", "pitcher", "pitch", "pitchers" )
+result = lapply(result, "[", , my_names)
+
+
+
+library(dplyr)
+library(stringr)
+clean <- function(result){
+result$group = rev(cumsum(rev(result$Player == "Totals")))
+result$Team = rev(cumsum(rev(result$Player == "Totals")))
+result$Time = rev(cumsum(rev(result$Player == "Totals")))
+result$Date = rev(cumsum(rev(result$Player == "Totals")))
+result$teams <- result$Player[1]
+result$info <- result$Player[2]
+
+return(result)
+}
+result_clean<-lapply(result, clean)
+
+
+mapply(write.csv, result_clean, file=paste0(names(result_clean), '.csv')
+
+#need to fix team names, positions, date, location in Excel 
+
+
