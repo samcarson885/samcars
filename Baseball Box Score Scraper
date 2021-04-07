@@ -41,6 +41,8 @@ return(result)
 }
 result_clean<-lapply(result, clean)
 
+result_cleaner<-lapply(result_clean, function(x) replace(x,is.na(x),0))
+result_cleaner<-lapply(result_cleaner, subset, subset = Player != 'Totals' & Player != "")
 
 mapply(write.csv, result_clean, file=paste0(names(result_clean), '.csv')
 
